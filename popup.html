@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocialBudi Cookie Extractor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🍪 SocialBudi</h1>
+      <p class="subtitle">Cookie Extractor</p>
+    </div>
+
+    <!-- Status Area -->
+    <div id="status-area">
+      <!-- Status will be injected by popup.js -->
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button id="extract-btn" class="btn btn-primary">
+        <span class="btn-icon">🔄</span>
+        Extract LinkedIn Cookie
+      </button>
+
+      <button id="copy-btn" class="btn btn-secondary" disabled>
+        <span class="btn-icon">📋</span>
+        Copy Cookie
+      </button>
+    </div>
+
+    <!-- Instructions -->
+    <div class="info">
+      <h3>How it works:</h3>
+      <ol>
+        <li>Log into LinkedIn in this browser</li>
+        <li>Click "Extract LinkedIn Cookie"</li>
+        <li>Go to your SocialBudi dashboard</li>
+        <li>Cookie will be sent automatically</li>
+      </ol>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>🔒 Privacy: Your cookie stays on your device until you send it to SocialBudi.</p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
