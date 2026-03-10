@@ -123,16 +123,27 @@ async function updateStatus() {
     });
 
     if (data.has_cookie) {
-      // Cookie exists - show success state
+      // Cookie exists - show status based on count
       const extractedDate = new Date(data.extracted_at);
-      const cookieLength = data.cookie_length || data.linkedin_cookie.length;
+      const cookieCount = data.cookie_count || 1;
+      const isComplete = cookieCount === 3;
+
+      // Build per-cookie detail lines
+      const cookieDetails = [];
+      if (data.linkedin_cookie) cookieDetails.push(`li_at (${data.linkedin_cookie.length} chars)`);
+      if (data.jsessionid)      cookieDetails.push(`JSESSIONID (${data.jsessionid.length} chars)`);
+      if (data.bcookie)         cookieDetails.push(`bcookie (${data.bcookie.length} chars)`);
+
+      const boxClass = isComplete ? 'success' : 'warning';
+      const icon     = isComplete ? '✓' : '⚠';
+      const title    = isComplete ? 'All 3 Cookies Extracted' : `${cookieCount}/3 Cookies Extracted`;
 
       statusArea.innerHTML = `
-        <div class="status-box success">
-          <div class="status-icon">✓</div>
+        <div class="status-box ${boxClass}">
+          <div class="status-icon">${icon}</div>
           <div class="status-content">
-            <p class="status-title"><strong>Cookie Extracted</strong></p>
-            <p class="status-detail">Length: ${cookieLength} characters</p>
+            <p class="status-title"><strong>${title}</strong></p>
+            ${cookieDetails.map(d => `<p class="status-detail">${d}</p>`).join('')}
             <p class="status-detail">Extracted: ${formatDate(extractedDate)}</p>
           </div>
         </div>
@@ -147,7 +158,7 @@ async function updateStatus() {
         <div class="status-box warning">
           <div class="status-icon">⚠</div>
           <div class="status-content">
-            <p class="status-title"><strong>No Cookie Found</strong></p>
+            <p class="status-title"><strong>No Cookies Found</strong></p>
             <p class="status-detail">Please log into LinkedIn first, then extract.</p>
           </div>
         </div>
