@@ -47,47 +47,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
- * Extract LinkedIn cookie from browser
+ * Extract LinkedIn cookies from browser
+ *
+ * Extracts all 3 required cookies for proxy authentication:
+ * - li_at: Primary authentication cookie
+ * - JSESSIONID: Session identifier
+ * - bcookie: Browser cookie
  *
  * @returns {Promise<Object>} Result object with success status and message
  */
 async function extractLinkedInCookie() {
   try {
-    // Get LinkedIn cookie from Chrome
-    const cookie = await chrome.cookies.get({
-      url: LINKEDIN_DOMAIN,
-      name: COOKIE_NAME
-    });
+    // Extract all 3 LinkedIn cookies in parallel
+    const [liAtCookie, jsessionidCookie, bcookieCookie] = await Promise.all([
+      chrome.cookies.get({ url: LINKEDIN_DOMAIN, name: 'li_at' }),
+      chrome.cookies.get({ url: LINKEDIN_DOMAIN, name: 'JSESSIONID' }),
+      chrome.cookies.get({ url: LINKEDIN_DOMAIN, name: 'bcookie' })
+    ]);
 
-    if (cookie && cookie.value) {
+    // Check if we have the primary cookie (li_at is required)
+    if (liAtCookie && liAtCookie.value) {
+      // Count how many cookies we successfully captured
+      const cookieCount = [liAtCookie, jsessionidCookie, bcookieCookie].filter(c => c && c.value).length;
+
       // Prepare data to store
       const data = {
-        linkedin_cookie: cookie.value,
+        linkedin_cookie: liAtCookie.value,
+        jsessionid: jsessionidCookie?.value || null,
+        bcookie: bcookieCookie?.value || null,
         user_agent: navigator.userAgent,
         extracted_at: new Date().toISOString(),
-        cookie_domain: cookie.domain,
-        cookie_expires: cookie.expirationDate ? cookie.expirationDate * 1000 : null,
-        cookie_length: cookie.value.length
+        cookie_domain: liAtCookie.domain,
+        cookie_expires: liAtCookie.expirationDate ? liAtCookie.expirationDate * 1000 : null,
+        cookie_length: liAtCookie.value.length,
+        cookie_count: cookieCount
       };
 
       // Store in chrome.storage.local
       await chrome.storage.local.set(data);
 
-      // Show success badge
-      await chrome.action.setBadgeText({ text: '✓' });
-      await chrome.action.setBadgeBackgroundColor({ color: '#00AA00' });
+      // Show badge based on cookie count
+      const badgeText = cookieCount === 3 ? '✓' : cookieCount.toString();
+      const badgeColor = cookieCount === 3 ? '#00AA00' : '#FFA500';
 
-      console.log('[SocialBudi] Cookie extracted successfully');
+      await chrome.action.setBadgeText({ text: badgeText });
+      await chrome.action.setBadgeBackgroundColor({ color: badgeColor });
+
+      console.log(`[SocialBudi] ${cookieCount}/3 cookies extracted successfully`);
 
       return {
         success: true,
-        message: 'LinkedIn cookie extracted successfully',
-        cookie_length: cookie.value.length,
+        message: `${cookieCount}/3 LinkedIn cookies extracted successfully`,
+        cookie_count: cookieCount,
+        cookie_length: liAtCookie.value.length,
         extracted_at: data.extracted_at
       };
     } else {
-      // No cookie found
-      console.warn('[SocialBudi] LinkedIn cookie not found');
+      // No primary cookie found
+      console.warn('[SocialBudi] LinkedIn li_at cookie not found');
 
       // Clear badge
       await chrome.action.setBadgeText({ text: '' });
@@ -113,30 +130,38 @@ async function extractLinkedInCookie() {
 /**
  * Get stored cookie data from chrome.storage.local
  *
+ * Returns all 3 LinkedIn cookies plus metadata
+ *
  * @returns {Promise<Object>} Stored cookie data
  */
 async function getCookieData() {
   try {
     const data = await chrome.storage.local.get([
       'linkedin_cookie',
+      'jsessionid',
+      'bcookie',
       'user_agent',
       'extracted_at',
       'cookie_domain',
       'cookie_expires',
-      'cookie_length'
+      'cookie_length',
+      'cookie_count'
     ]);
 
-    // Check if cookie exists
+    // Check if primary cookie exists
     const hasCookie = !!data.linkedin_cookie;
 
     return {
       has_cookie: hasCookie,
       linkedin_cookie: data.linkedin_cookie || null,
+      jsessionid: data.jsessionid || null,
+      bcookie: data.bcookie || null,
       user_agent: data.user_agent || null,
       extracted_at: data.extracted_at || null,
       cookie_domain: data.cookie_domain || null,
       cookie_expires: data.cookie_expires || null,
-      cookie_length: data.cookie_length || 0
+      cookie_length: data.cookie_length || 0,
+      cookie_count: data.cookie_count || 0
     };
   } catch (error) {
     console.error('[SocialBudi] Error getting stored data:', error);
@@ -203,8 +228,10 @@ chrome.runtime.onStartup.addListener(() => {
   // Check if we have stored cookie and update badge
   getCookieData().then(data => {
     if (data.has_cookie) {
-      chrome.action.setBadgeText({ text: '✓' });
-      chrome.action.setBadgeBackgroundColor({ color: '#00AA00' });
+      const badgeText = data.cookie_count === 3 ? '✓' : (data.cookie_count || 1).toString();
+      const badgeColor = data.cookie_count === 3 ? '#00AA00' : '#FFA500';
+      chrome.action.setBadgeText({ text: badgeText });
+      chrome.action.setBadgeBackgroundColor({ color: badgeColor });
     } else {
       chrome.action.setBadgeText({ text: '' });
     }

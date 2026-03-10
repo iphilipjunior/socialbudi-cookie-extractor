@@ -110,9 +110,11 @@ async function handleCookieRequest() {
         success: true,
         data: {
           linkedin_cookie: response.linkedin_cookie,
+          jsessionid: response.jsessionid,
+          bcookie: response.bcookie,
           user_agent: response.user_agent,
           extracted_at: response.extracted_at,
-          cookie_length: response.cookie_length
+          cookie_count: response.cookie_count
         },
         timestamp: new Date().toISOString()
       }, '*');
